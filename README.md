@@ -32,7 +32,6 @@
 
 ```json
 {
-  "subject": "System Alert: High Level of Coolness",
   "emailBodyTemplate": "Hello {Name}, your access to {Target} is granted.",
   "recipients": [
     {
