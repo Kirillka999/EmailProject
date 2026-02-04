@@ -1,5 +1,3 @@
-# EmailProject
-
 # 🚀 ULTRA-MAILER PRO: Enterprise Distributed Propagation Grid 🚀
 
 ## 💡 Философия проекта
