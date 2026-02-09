@@ -1,4 +1,6 @@
 using MailingService.Consumers;
+using MailingService.Models;
+using MailingService.Services;
 using MassTransit;
 
 namespace MailingService;
@@ -10,6 +12,10 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddControllers();
+        
+        builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+        
+        builder.Services.AddSingleton<SmtpConnectionManager>();
         
         // Add services to the container.
         builder.Services.AddAuthorization();
@@ -34,6 +40,8 @@ public class Program
                     h.Username("guest");
                     h.Password("guest");
                 });
+                
+                cfg.PrefetchCount = 1;
                 
                 cfg.ConfigureEndpoints(context);
             });
