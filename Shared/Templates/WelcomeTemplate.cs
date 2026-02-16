@@ -1,3 +1,5 @@
+using Shared.Interfaces;
+
 namespace Shared.Templates;
 
 public class WelcomeTemplate : IEmailTemplate

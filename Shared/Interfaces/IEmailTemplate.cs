@@ -1,4 +1,4 @@
-namespace Shared.Templates;
+namespace Shared.Interfaces;
 
 public interface IEmailTemplate
 {

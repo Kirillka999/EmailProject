@@ -1,6 +1,6 @@
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using RazorLight;
+using Shared.Interfaces;
 using Shared.Templates;
 
 namespace MailingService.Services;
@@ -12,29 +12,24 @@ public class TemplateRenderer
     public TemplateRenderer()
     {
         var sharedAssembly = typeof(IEmailTemplate).Assembly;
-        var entryAssembly = Assembly.GetEntryAssembly();
 
         var builder = new RazorLightEngineBuilder()
             .UseEmbeddedResourcesProject(sharedAssembly, "Shared.Templates")
             .UseMemoryCachingProvider();
         
-        builder.AddMetadataReferences(MetadataReference.CreateFromFile(sharedAssembly.Location));
-        
-        if (entryAssembly != null)
-        {
-            builder.AddMetadataReferences(MetadataReference.CreateFromFile(entryAssembly.Location));
-        }
-
-        var trustedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .GroupBy(a => a.GetName().Name)
-            .Select(g => g.First())
+            .Distinct()
             .ToList();
 
-        foreach (var assembly in trustedAssemblies)
+        foreach (var assembly in assemblies)
         {
             string name = assembly.GetName().Name ?? "";
-            if (name.StartsWith("System.") || name.StartsWith("Microsoft.Extensions") || name == "mscorlib" || name == "netstandard")
+            if (name.StartsWith("System.") || 
+                name.StartsWith("Microsoft.Extensions") || 
+                name == "mscorlib" || 
+                name == "netstandard" ||
+                assembly == sharedAssembly)
             {
                 builder.AddMetadataReferences(MetadataReference.CreateFromFile(assembly.Location));
             }

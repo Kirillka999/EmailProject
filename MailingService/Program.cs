@@ -2,7 +2,7 @@ using MailingService.Consumers;
 using MailingService.Models;
 using MailingService.Services;
 using MassTransit;
-using Shared.Templates;
+using Shared.Interfaces;
 
 namespace MailingService;
 
@@ -36,7 +36,10 @@ public class Program
         {
             var sharedAssembly = typeof(IEmailTemplate).Assembly;
             var templateTypes = sharedAssembly.GetTypes()
-                .Where(t => typeof(IEmailTemplate).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+                .Where(t => typeof(IEmailTemplate).IsAssignableFrom(t) 
+                            && !t.IsInterface 
+                            && !t.IsAbstract
+                            && t.IsClass)
                 .ToList();
             
             foreach (var templateType in templateTypes)

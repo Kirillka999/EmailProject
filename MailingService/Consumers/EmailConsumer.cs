@@ -4,7 +4,7 @@ using MassTransit;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using Shared.Events;
-using Shared.Templates;
+using Shared.Interfaces;
 
 namespace MailingService.Consumers;
 
