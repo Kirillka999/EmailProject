@@ -30,6 +30,8 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         
+        builder.Services.AddSingleton<TemplateRenderer>(); 
+        
         builder.Services.AddMassTransit(x =>
         {
             var sharedAssembly = typeof(IEmailTemplate).Assembly;
