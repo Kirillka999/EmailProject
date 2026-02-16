@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace MailingService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/[controller]/[action]")]
 public class DeliveryController : ControllerBase
 {
     private readonly IPublishEndpoint _publishEndpoint;
@@ -15,7 +15,7 @@ public class DeliveryController : ControllerBase
         _publishEndpoint = publishEndpoint;
     }
     
-    [HttpPost("receive")]
+    [HttpPost]
     public async Task<IActionResult> ReceiveMailingRequest([FromBody] BulkEmailRequest request)
     {
         if (!request.Recipients.Any())
@@ -36,7 +36,8 @@ public class DeliveryController : ControllerBase
             
             var message = new EmailMessage
             {
-                ToEmail = recipient.Email,
+                Recipient = recipient.Email,
+                Subject = request.Subject,
                 Body = personalizedBody
             };
             

@@ -2,6 +2,7 @@ using MailingService.Consumers;
 using MailingService.Models;
 using MailingService.Services;
 using MassTransit;
+using Shared.Templates;
 
 namespace MailingService;
 
@@ -31,7 +32,17 @@ public class Program
         
         builder.Services.AddMassTransit(x =>
         {
-            x.AddConsumer<EmailConsumer>();
+            var sharedAssembly = typeof(IEmailTemplate).Assembly;
+            var templateTypes = sharedAssembly.GetTypes()
+                .Where(t => typeof(IEmailTemplate).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+                .ToList();
+            
+            foreach (var templateType in templateTypes)
+            {
+                var consumerType = typeof(EmailConsumer<>).MakeGenericType(templateType);
+        
+                x.AddConsumer(consumerType);
+            }
 
             x.UsingRabbitMq((context, cfg) =>
             {
