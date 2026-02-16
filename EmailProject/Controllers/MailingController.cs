@@ -1,35 +1,39 @@
-using EmailProject.Models;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Events;
+using Shared.Templates;
 
 namespace EmailProject.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/[controller]/[action]")]
 public class MailingController : ControllerBase
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _configuration;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public MailingController(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public MailingController(IPublishEndpoint publishEndpoint)
     {
-        _httpClientFactory = httpClientFactory;
-        _configuration = configuration;
+        _publishEndpoint = publishEndpoint;
     }
 
-    [HttpPost("send-bulk")]
-    public async Task<IActionResult> SendBulk([FromBody] BulkEmailRequest request)
+    [HttpPost]
+    public async Task<IActionResult> SendTestEmail()
     {
-        var mailingServiceUrl = "http://localhost:5100/api/delivery/receive";
-
-        var client = _httpClientFactory.CreateClient();
-        
-        var response = await client.PostAsJsonAsync(mailingServiceUrl, request);
-
-        if (response.IsSuccessStatusCode)
+        var templateData = new WelcomeTemplate
         {
-            return Ok(new { Message = "Запрос успешно передан в сервис рассылок." });
-        }
+            UserName = "Кирилл",
+            Test = "Hello test"
+        };
+        
+        var notification = new NotificationEvent<WelcomeTemplate>
+        {
+            Email = "kirill93549@gmail.com",
+            Subject = "Добро пожаловать в систему!",
+            Data = templateData
+        };
+        
+        await _publishEndpoint.Publish(notification);
 
-        return StatusCode((int)response.StatusCode, "Ошибка при передаче в сервис рассылок");
+        return Ok(new { Message = "Событие отправлено в очередь" });
     }
 }

@@ -1,3 +1,5 @@
+using MassTransit;
+
 namespace EmailProject;
 
 public class Program
@@ -15,7 +17,17 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         
-        builder.Services.AddHttpClient();
+        builder.Services.AddMassTransit(x =>
+        {
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host("localhost", "/", h =>
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+            });
+        });
 
         var app = builder.Build();
 

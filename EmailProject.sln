@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailProject", "EmailProjec
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailingService", "MailingService\MailingService.csproj", "{D389C58F-2FF9-4E93-8808-B240EB00B481}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{59828AEF-F609-4B65-A08A-FE34DB59C621}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{D389C58F-2FF9-4E93-8808-B240EB00B481}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D389C58F-2FF9-4E93-8808-B240EB00B481}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D389C58F-2FF9-4E93-8808-B240EB00B481}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59828AEF-F609-4B65-A08A-FE34DB59C621}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59828AEF-F609-4B65-A08A-FE34DB59C621}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59828AEF-F609-4B65-A08A-FE34DB59C621}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59828AEF-F609-4B65-A08A-FE34DB59C621}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
