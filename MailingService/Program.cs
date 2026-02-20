@@ -1,5 +1,5 @@
 using MailingService.Consumers;
-using MailingService.Data;
+using MailingService.Database;
 using MailingService.Models;
 using MailingService.Services;
 using MassTransit;
@@ -40,7 +40,6 @@ public class Program
         
         builder.Services.AddMassTransit(x =>
         {
-            
             x.AddConsumer<EmailConsumer>();
 
             x.UsingRabbitMq((context, cfg) =>
@@ -50,10 +49,20 @@ public class Program
                     h.Username("guest");
                     h.Password("guest");
                 });
-                
+        
                 cfg.PrefetchCount = 1;
-                
-                cfg.ConfigureEndpoints(context);
+        
+                cfg.ReceiveEndpoint("email-queue", e =>
+                {
+                    e.UseKillSwitch(options => options
+                        .SetActivationThreshold(3)
+                        .SetTripThreshold(0.15)
+                        .SetRestartTimeout(TimeSpan.FromMinutes(60)));
+                    
+                    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(10)));
+
+                    e.ConfigureConsumer<EmailConsumer>(context);
+                });
             });
         });
         

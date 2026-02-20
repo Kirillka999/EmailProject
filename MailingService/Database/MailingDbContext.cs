@@ -1,7 +1,7 @@
 using MailingService.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace MailingService.Data;
+namespace MailingService.Database;
 
 public class MailingDbContext : DbContext
 {
