@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Events;
@@ -25,11 +26,14 @@ public class MailingController : ControllerBase
             Test = "Hello test"
         };
         
-        var notification = new NotificationEvent<WelcomeTemplate>
+        var notification = new NotificationEvent
         {
             Email = "kirill93549@gmail.com",
             Subject = "Добро пожаловать в систему!",
-            Data = templateData
+            
+            TemplateName = $"{nameof(WelcomeTemplate)}.cshtml",
+            ModelTypeName = typeof(WelcomeTemplate).AssemblyQualifiedName!,
+            Payload = JsonSerializer.Serialize(templateData)
         };
         
         await _publishEndpoint.Publish(notification);

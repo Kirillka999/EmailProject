@@ -1,8 +1,9 @@
 using MailingService.Consumers;
+using MailingService.Data;
 using MailingService.Models;
 using MailingService.Services;
 using MassTransit;
-using Shared.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace MailingService;
 
@@ -32,22 +33,15 @@ public class Program
         
         builder.Services.AddSingleton<TemplateRenderer>(); 
         
+        builder.Services.AddDbContext<MailingDbContext>(options =>
+            options.UseNpgsql(
+                builder.Configuration.GetConnectionString("MailingDb")
+                ));
+        
         builder.Services.AddMassTransit(x =>
         {
-            var sharedAssembly = typeof(IEmailTemplate).Assembly;
-            var templateTypes = sharedAssembly.GetTypes()
-                .Where(t => typeof(IEmailTemplate).IsAssignableFrom(t) 
-                            && !t.IsInterface 
-                            && !t.IsAbstract
-                            && t.IsClass)
-                .ToList();
             
-            foreach (var templateType in templateTypes)
-            {
-                var consumerType = typeof(EmailConsumer<>).MakeGenericType(templateType);
-        
-                x.AddConsumer(consumerType);
-            }
+            x.AddConsumer<EmailConsumer>();
 
             x.UsingRabbitMq((context, cfg) =>
             {

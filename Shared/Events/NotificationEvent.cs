@@ -1,8 +1,10 @@
 namespace Shared.Events;
 
-public class NotificationEvent<T> where T : class
+public class NotificationEvent
 {
-    public string Email { get; set; } = string.Empty;
-    public string Subject { get; set; } = string.Empty;
-    public T Data { get; set; } = null!;
+    public string Email { get; init; } = string.Empty;
+    public string Subject { get; init; } = string.Empty;
+    public string TemplateName { get; init; } = string.Empty; 
+    public string ModelTypeName { get; init; } = string.Empty;
+    public string Payload { get; init; } = string.Empty; 
 }

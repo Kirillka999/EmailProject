@@ -1,7 +1,6 @@
 using Microsoft.CodeAnalysis;
 using RazorLight;
-using Shared.Interfaces;
-using Shared.Templates;
+using Shared.Events;
 
 namespace MailingService.Services;
 
@@ -11,36 +10,16 @@ public class TemplateRenderer
 
     public TemplateRenderer()
     {
-        var sharedAssembly = typeof(IEmailTemplate).Assembly;
-
-        var builder = new RazorLightEngineBuilder()
-            .UseEmbeddedResourcesProject(sharedAssembly, "Shared.Templates")
-            .UseMemoryCachingProvider();
+        var sharedAssembly = typeof(NotificationEvent).Assembly;
         
-        var assemblies = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .Distinct()
-            .ToList();
-
-        foreach (var assembly in assemblies)
-        {
-            string name = assembly.GetName().Name ?? "";
-            if (name.StartsWith("System.") || 
-                name.StartsWith("Microsoft.Extensions") || 
-                name == "mscorlib" || 
-                name == "netstandard" ||
-                assembly == sharedAssembly)
-            {
-                builder.AddMetadataReferences(MetadataReference.CreateFromFile(assembly.Location));
-            }
-        }
-
-        _engine = builder.Build();
+        _engine = new RazorLightEngineBuilder()
+            .UseEmbeddedResourcesProject(sharedAssembly, "Shared.Templates")
+            .UseMemoryCachingProvider()
+            .Build();
     }
 
-    public async Task<string> RenderAsync<T>(T model)
+    public async Task<string> RenderAsync(string templateName, object model)
     {
-        string templateKey = $"{typeof(T).Name}.cshtml";
-        return await _engine.CompileRenderAsync(templateKey, model);
+        return await _engine.CompileRenderAsync(templateName, model);
     }
 }
