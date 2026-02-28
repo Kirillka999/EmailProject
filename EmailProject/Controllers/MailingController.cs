@@ -26,14 +26,13 @@ public class MailingController : ControllerBase
             Test = "Hello test"
         };
         
-        var notification = new NotificationEvent
+        var notification = new NotificationEvent(
+            nameof(WelcomeTemplate),
+            typeof(WelcomeTemplate).AssemblyQualifiedName!, 
+            JsonSerializer.Serialize(templateData))
         {
             Email = "kirill93549@gmail.com",
             Subject = "Добро пожаловать в систему!",
-            
-            TemplateName = $"{nameof(WelcomeTemplate)}.cshtml",
-            ModelTypeName = typeof(WelcomeTemplate).AssemblyQualifiedName!,
-            Payload = JsonSerializer.Serialize(templateData)
         };
         
         await _publishEndpoint.Publish(notification);

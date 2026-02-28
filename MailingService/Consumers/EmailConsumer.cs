@@ -32,28 +32,46 @@ public class EmailConsumer : IConsumer<NotificationEvent>
     public async Task Consume(ConsumeContext<NotificationEvent> context)
     {
         var eventData = context.Message;
+        var messageId = context.MessageId ?? Guid.NewGuid();
+
+        var emailLog = await _mailDbContext.EmailLogs.FindAsync(messageId);
         
-        var emailLog = new EmailLog
+        if (emailLog is null)
         {
-            Id = Guid.NewGuid(),
-            Recipient = eventData.Email,
-            Subject = eventData.Subject,
-            CreatedAt = DateTime.UtcNow
-        };
+            emailLog = new EmailLog
+            {
+                Id = messageId,
+                Recipient = eventData.Email,
+                Subject = eventData.Subject,
+                CreatedAt = DateTime.UtcNow,
+                Status = "Processing"
+            };
+            _mailDbContext.EmailLogs.Add(emailLog);
+        }
+        else
+        {
+            emailLog.Status = "Processing"; // ?
+            emailLog.ErrorMessage = null;
+        }
+        
+        await _mailDbContext.SaveChangesAsync();
 
         try
         {
-            Type? modelType = Type.GetType(eventData.ModelTypeName);
-            if (modelType == null)
-            {
-                throw new InvalidOperationException($"Не удалось найти тип модели: {eventData.ModelTypeName}");
-            }
+            Type modelType = Type.GetType(eventData.ModelTypeName)!;
             
-            object? templateModel = JsonSerializer.Deserialize(eventData.Payload, modelType);
-            if (templateModel == null)
-            {
-                throw new InvalidOperationException("Не удалось десериализовать Payload письма.");
-            }
+            // if (modelType == null)
+            // {
+            //     throw new InvalidOperationException($"Не удалось найти тип модели: {eventData.ModelTypeName}");
+            // }
+            //
+            
+            object templateModel = JsonSerializer.Deserialize(eventData.Payload, modelType)!;
+            
+            // if (templateModel == null)
+            // {
+            //     throw new InvalidOperationException("Не удалось десериализовать Payload письма.");
+            // }
             
             string htmlBody = await _renderer.RenderAsync(eventData.TemplateName, templateModel);
             
@@ -67,7 +85,7 @@ public class EmailConsumer : IConsumer<NotificationEvent>
             };
         
             _logger.LogInformation("[EmailConsumer] Отправка письма на {Email}...", eventData.Email);
-            
+            //  throw new RateLimitException("test rate limit", new Exception("test rate limit"));
             await _connectionManager.ExecuteAsync(async client =>
             {
                 await client.SendAsync(message);
@@ -76,7 +94,6 @@ public class EmailConsumer : IConsumer<NotificationEvent>
             emailLog.Status = "Sent";
             _logger.LogInformation("[EmailConsumer] Письмо успешно отправлено.");
             
-            _mailDbContext.EmailLogs.Add(emailLog);
             await _mailDbContext.SaveChangesAsync(); 
         }
         catch (Exception e) when (IsRateLimitError(e))
@@ -86,7 +103,6 @@ public class EmailConsumer : IConsumer<NotificationEvent>
             emailLog.Status = "RateLimited";
             emailLog.ErrorMessage = "Сработал лимит Google: " + e.Message;
             
-            _mailDbContext.EmailLogs.Add(emailLog);
             await _mailDbContext.SaveChangesAsync();
             
             throw new RateLimitException("Google SMTP Rate Limit Reached.", e);
@@ -98,8 +114,8 @@ public class EmailConsumer : IConsumer<NotificationEvent>
             emailLog.Status = "Failed";
             emailLog.ErrorMessage = e.Message;
             
-            _mailDbContext.EmailLogs.Add(emailLog);
             await _mailDbContext.SaveChangesAsync();
+            throw;
         }
     }
     

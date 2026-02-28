@@ -1,4 +1,6 @@
+using System.Text.Json;
 using MassTransit;
+using Shared.Templates;
 
 namespace EmailProject;
 

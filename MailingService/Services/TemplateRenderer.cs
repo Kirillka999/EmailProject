@@ -13,7 +13,7 @@ public class TemplateRenderer
         var sharedAssembly = typeof(NotificationEvent).Assembly;
         
         _engine = new RazorLightEngineBuilder()
-            .UseEmbeddedResourcesProject(sharedAssembly, "Shared.Templates")
+            .UseEmbeddedResourcesProject(sharedAssembly, nameof(Shared) + ".Templates")
             .UseMemoryCachingProvider()
             .Build();
     }
