@@ -16,15 +16,15 @@ public class NotificationEvent
         init
         {
             CheckIsNotNullOrEmpty(value);
-            
+        
             _templateName = value.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase) ? value : $"{value}.cshtml";
-            
+        
             var assembly = typeof(NotificationEvent).Assembly;
-            string resourceName = $"Shared.Templates.{_templateName}";
             
-            var resourceInfo = assembly.GetManifestResourceInfo(resourceName);
+            bool templateExists = assembly.GetManifestResourceNames()
+                .Any(name => name.EndsWith($".{_templateName}", StringComparison.OrdinalIgnoreCase));
 
-            if (resourceInfo is null)
+            if (!templateExists)
             {
                 throw new FileNotFoundException($"Template not found: {_templateName}");
             }
