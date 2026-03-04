@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="Templates\**\*.cshtml" />
+        <EmbeddedResource Include="**\*.cshtml" />
     </ItemGroup>
 
 </Project>
