@@ -1,4 +1,5 @@
-using System.Text.Json; using MailingService.Database;
+using System.Text.Json; 
+using MailingService.Database;
 using MailingService.Entities;
 using MailingService.Exceptions;
 using MailingService.Models;
@@ -50,8 +51,7 @@ public class EmailConsumer : IConsumer<NotificationEvent>
         }
         else
         {
-            emailLog.Status = "Processing"; // ?
-            emailLog.ErrorMessage = null;
+            emailLog.Status = "Processing";
         }
         
         await _mailDbContext.SaveChangesAsync();
@@ -59,20 +59,7 @@ public class EmailConsumer : IConsumer<NotificationEvent>
         try
         {
             Type modelType = Type.GetType(eventData.ModelTypeName)!;
-            
-            // if (modelType == null)
-            // {
-            //     throw new InvalidOperationException($"Не удалось найти тип модели: {eventData.ModelTypeName}");
-            // }
-            //
-            
             object templateModel = JsonSerializer.Deserialize(eventData.Payload, modelType)!;
-            
-            // if (templateModel == null)
-            // {
-            //     throw new InvalidOperationException("Не удалось десериализовать Payload письма.");
-            // }
-            
             string htmlBody = await _renderer.RenderAsync(eventData.TemplateName, templateModel);
             
             var message = new MimeMessage();
@@ -85,7 +72,7 @@ public class EmailConsumer : IConsumer<NotificationEvent>
             };
         
             _logger.LogInformation("[EmailConsumer] Отправка письма на {Email}...", eventData.Email);
-            //  throw new RateLimitException("test rate limit", new Exception("test rate limit"));
+            
             await _connectionManager.ExecuteAsync(async client =>
             {
                 await client.SendAsync(message);
@@ -101,7 +88,7 @@ public class EmailConsumer : IConsumer<NotificationEvent>
             _logger.LogCritical("[EmailConsumer] ЛИМИТ GOOGLE! Письмо вызвало исключение, сработает KillSwitch.");
             
             emailLog.Status = "RateLimited";
-            emailLog.ErrorMessage = "Сработал лимит Google: " + e.Message;
+            AppendError(emailLog, "Сработал лимит Google: " + e.Message);
             
             await _mailDbContext.SaveChangesAsync();
             
@@ -112,10 +99,24 @@ public class EmailConsumer : IConsumer<NotificationEvent>
             _logger.LogError(e, "[EmailConsumer] Ошибка обработки/отправки письма.");
             
             emailLog.Status = "Failed";
-            emailLog.ErrorMessage = e.Message;
+            AppendError(emailLog, e.Message);
             
             await _mailDbContext.SaveChangesAsync();
             throw;
+        }
+    }
+
+    private void AppendError(EmailLog log, string newErrorMessage)
+    {
+        var formattedError = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC] {newErrorMessage}";
+
+        if (string.IsNullOrWhiteSpace(log.ErrorMessage))
+        {
+            log.ErrorMessage = formattedError;
+        }
+        else
+        {
+            log.ErrorMessage = log.ErrorMessage + Environment.NewLine + formattedError;
         }
     }
     
