@@ -12,7 +12,12 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
     networks:
       - shared-net
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
 
 networks:
   shared-net:
     name: is-microservices-net
+
+volumes:
+  rabbitmq-data:
