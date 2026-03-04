@@ -110,14 +110,12 @@ public class EmailConsumer : IConsumer<NotificationEvent>
     {
         var formattedError = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC] {newErrorMessage}";
 
-        if (string.IsNullOrWhiteSpace(log.ErrorMessage))
+        if (!string.IsNullOrWhiteSpace(log.ErrorMessage))
         {
-            log.ErrorMessage = formattedError;
+            log.ErrorMessage += Environment.NewLine;
         }
-        else
-        {
-            log.ErrorMessage = log.ErrorMessage + Environment.NewLine + formattedError;
-        }
+
+        log.ErrorMessage += formattedError;
     }
     
     private bool IsRateLimitError(Exception ex)
