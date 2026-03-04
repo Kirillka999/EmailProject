@@ -25,11 +25,6 @@ public class Program
         // Add services to the container.
         builder.Services.AddAuthorization();
         
-        builder.WebHost.ConfigureKestrel(options =>
-        {
-            options.ListenLocalhost(5100); 
-        });
-
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
@@ -40,7 +35,15 @@ public class Program
         
         builder.Services.AddDbContext<MailingDbContext>(options =>
             options.UseNpgsql(
-                builder.Configuration.GetConnectionString("MailingDb")
+                builder.Configuration.GetConnectionString("MailingDb"),
+                npgsqlOptions =>
+                {
+                    npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        errorCodesToAdd: null
+                    );
+                }
                 ));
         
         var rmqConfig = builder.Configuration.GetSection("RabbitMqSettings").Get<RabbitMqSettings>();
@@ -109,6 +112,12 @@ public class Program
         app.UseAuthorization();
         
         app.MapControllers();
+        
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MailingDbContext>();
+            db.Database.Migrate(); 
+        }
 
         app.Run();
     }

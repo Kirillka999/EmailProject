@@ -109,7 +109,7 @@ public class NotificationEvent
     {
         if (string.IsNullOrWhiteSpace(payload))
         {
-            throw new ArgumentNullException(nameof(payload));
+            throw new ArgumentNullException();
         }
     }
 }

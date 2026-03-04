@@ -23,7 +23,9 @@ public class Program
         {
             x.UsingRabbitMq((context, cfg) =>
             {
-                cfg.Host("localhost", "/", h =>
+                var host = builder.Configuration["RabbitMq:Host"] ?? "localhost";
+                
+                cfg.Host(host, "/", h =>
                 {
                     h.Username("guest");
                     h.Password("guest");
