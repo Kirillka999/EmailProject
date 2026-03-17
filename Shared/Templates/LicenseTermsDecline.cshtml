@@ -1,0 +1,16 @@
+@using Shared.Templates
+@model LicenseTermsDecline
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <title>Модерація ліцензійних умов — Відхилено пункт — @Model.LicenseTermTitle</title>
+</head>
+<body>
+<p>Шановний @Model.UserFirstName @Model.UserLastName!</p>
+<p>Ваш запит на перевірку пункту ліцензійних умов «@Model.LicenseTermTitle» був розглянутий модератором та відхилений.</p>
+<p>Причина відхилення: @Model.LicenseTermComment</p>
+<p>Будь ласка, внесіть необхідні правки згідно з коментарем та відправте пункт на повторну перевірку через ваш особистий кабінет: https://is.op.edu.ua/employee/details/@Model.employeeID</p>
+<p>З повагою, адміністрація інформаційної системи «Одеської політехніки»</p>
+</body>
+</html>

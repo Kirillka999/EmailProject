@@ -1,4 +1,4 @@
-using MailingService.Models;
+using MailingService.Entities;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Options;
 

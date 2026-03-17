@@ -1,4 +1,4 @@
-namespace MailingService.Models;
+namespace MailingService.Entities;
 
 public class RabbitMqSettings
 {

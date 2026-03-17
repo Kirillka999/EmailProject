@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Shared.Events;
 
-public class NotificationEvent
+public class EmailNotificationEvent
 {
     public string Email { get; init; } = string.Empty;
     public string Subject { get; init; } = string.Empty;
@@ -19,7 +19,7 @@ public class NotificationEvent
         
             _templateName = value.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase) ? value : $"{value}.cshtml";
         
-            var assembly = typeof(NotificationEvent).Assembly;
+            var assembly = typeof(EmailNotificationEvent).Assembly;
             
             bool templateExists = assembly.GetManifestResourceNames()
                 .Any(name => name.EndsWith($".{_templateName}", StringComparison.OrdinalIgnoreCase));
@@ -54,24 +54,17 @@ public class NotificationEvent
         init
         {
             CheckIsNotNullOrEmpty(value);
-            
-            try
-            {
-                using var doc = JsonDocument.Parse(value);
-            }
-            catch (JsonException ex)
-            {
-                throw new ArgumentException("Payload is not a valid JSON string.", nameof(Payload), ex);
-            }
 
             _payload = value;
         }
     }
     
-    public NotificationEvent() { }
+    public EmailNotificationEvent() { }
     
-    public NotificationEvent(string templateName, string modelTypeName, string payload)
+    public EmailNotificationEvent(string recipient, string subject, string templateName, string modelTypeName, string payload)
     {
+        Email =  recipient;
+        Subject = subject;
         TemplateName = templateName;
         ModelTypeName = modelTypeName;
         Payload = payload;
@@ -91,12 +84,6 @@ public class NotificationEvent
             {
                 throw new ArgumentException("JSON is valid, but resulted in null object.");
             }
-        }
-        catch (JsonException ex)
-        {
-            throw new ArgumentException(
-                $"Payload cannot be deserialized into type '{targetType.Name}'. Error: {ex.Message}", 
-                nameof(Payload), ex);
         }
         catch (Exception ex)
         {

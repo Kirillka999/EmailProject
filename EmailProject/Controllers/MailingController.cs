@@ -25,15 +25,13 @@ public class MailingController : ControllerBase
             UserName = "Кирилл",
             Test = "Hello test"
         };
-        
-        var notification = new NotificationEvent(
+
+        var notification = new EmailNotificationEvent(
+            "kirill93549@gmail.com",
+            "Добро пожаловать в систему!",
             nameof(WelcomeTemplate),
-            typeof(WelcomeTemplate).AssemblyQualifiedName!, 
-            JsonSerializer.Serialize(templateData))
-        {
-            Email = "kirill93549@gmail.com",
-            Subject = "Добро пожаловать в систему!",
-        };
+            typeof(WelcomeTemplate).AssemblyQualifiedName!,
+            JsonSerializer.Serialize(templateData));
         
         await _publishEndpoint.Publish(notification);
 

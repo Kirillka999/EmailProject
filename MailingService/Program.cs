@@ -1,8 +1,10 @@
 using MailingService.BackgroundServices;
 using MailingService.Consumers;
 using MailingService.Database;
+using MailingService.Entities;
 using MailingService.Exceptions;
-using MailingService.Models;
+using MailingService.Interfaces;
+using MailingService.Razor;
 using MailingService.Services;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -14,111 +16,63 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-
-        builder.Services.AddControllers();
         
+        // IOptions<T>
         builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
         builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMqSettings"));
-        
-        builder.Services.AddSingleton<SmtpConnectionManager>();
-        
-        // Add services to the container.
-        builder.Services.AddAuthorization();
-        
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-        
-        builder.Services.AddSingleton<TemplateRenderer>(); 
-        
-        builder.Services.AddHostedService<ErrorQueueReprocessorService>();
-        
-        builder.Services.AddDbContext<MailingDbContext>(options =>
-            options.UseNpgsql(
-                builder.Configuration.GetConnectionString("MailingDb"),
-                npgsqlOptions =>
-                {
-                    npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null
-                    );
-                }
-                ));
-        
-        var rmqConfig = builder.Configuration.GetSection("RabbitMqSettings").Get<RabbitMqSettings>();
+        builder.Services.Configure<ErrorEmailQueueServiceSettings>(builder.Configuration.GetSection("ErrorEmailQueueServiceSettings"));
 
-        if (rmqConfig == null)
-        {
-            throw new ApplicationException("RabbitMqSettings are missing in appsettings.json");
-        }
+        // Database
+        builder.Services.AddDbContext<MailingDbContext>(opt => 
+            opt.UseNpgsql(builder.Configuration.GetConnectionString("MailingDb")));
+
+        // Services
+        builder.Services.AddSingleton<TemplateRenderer>();
+        builder.Services.AddSingleton<SmtpConnectionManager>();
+        builder.Services.AddScoped<IEmailService, EmailService>();
         
+        // Background services
+        builder.Services.AddHostedService<ErrorEmailQueueService>();
+        
+        // MassTransit + Rabbit
         builder.Services.AddMassTransit(x =>
         {
             x.AddConsumer<EmailConsumer>();
 
             x.UsingRabbitMq((context, cfg) =>
             {
-                cfg.Host(rmqConfig.Host, "/", h =>
+                var rabbitSettings = builder.Configuration.GetSection("RabbitMqSettings").Get<RabbitMqSettings>()!;
+
+                cfg.Host(rabbitSettings.Host, h =>
                 {
-                    h.Username(rmqConfig.Username);
-                    h.Password(rmqConfig.Password);
+                    h.Username(rabbitSettings.Username);
+                    h.Password(rabbitSettings.Password);
                 });
-        
+
                 cfg.PrefetchCount = 1;
-        
-                cfg.ReceiveEndpoint(rmqConfig.QueueName, e =>
+
+                cfg.ReceiveEndpoint(rabbitSettings.QueueName, e =>
                 {
                     e.UseKillSwitch(options => options
                         .SetActivationThreshold(3)
                         .SetTripThreshold(0.15)
-                        .SetExceptionFilter(filter =>
-                        {
-                            filter.Handle<RateLimitException>();
-                        })
-                        .SetRestartTimeout(TimeSpan.FromMinutes(rmqConfig.KillSwitchTimeoutMinutes)));
-                    
-                    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(10)));
+                        .SetExceptionFilter(filter => { filter.Handle<RateLimitException>(); })
+                        .SetRestartTimeout(TimeSpan.FromMinutes(rabbitSettings.KillSwitchTimeoutMinutes)));
+
+                    e.UseMessageRetry(r =>
+                    {
+                        r.Interval(3, TimeSpan.FromSeconds(10));
+
+                        r.Ignore<RateLimitException>();
+                    });
 
                     e.ConfigureConsumer<EmailConsumer>(context);
                 });
-                
-                // var errorQueueName = $"{rmqConfig.QueueName}_error";
-                
-                // cfg.ReceiveEndpoint(errorQueueName, e =>
-                // {
-                //     e.ConfigureConsumeTopology = false; 
-                //     
-                //     e.SetQueueArgument("x-message-ttl", (int)TimeSpan.FromMinutes(rmqConfig.KillSwitchTimeoutMinutes).TotalMilliseconds);
-                //     
-                //     e.SetQueueArgument("x-dead-letter-exchange", "");
-                //     
-                //     e.SetQueueArgument("x-dead-letter-routing-key", rmqConfig.QueueName);
-                // });
             });
         });
         
         var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
-
-        app.UseHttpsRedirection();
-
-        app.UseAuthorization();
         
-        app.MapControllers();
-        
-        using (var scope = app.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<MailingDbContext>();
-            db.Database.Migrate(); 
-        }
-
         app.Run();
     }
 }

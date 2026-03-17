@@ -1,0 +1,16 @@
+@using Shared.Templates
+@model LicenseTermsApprove
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <title>Модерація ліцензійних умов — Ухвалено пункт — @Model.LicenseTermTitle</title>
+</head>
+<body>
+<p>Шановний @Model.UserFirstName @Model.UserLastName!</p>
+<p>Ваш запит на перевірку пункту ліцензійних умов «@Model.LicenseTermTitle» успішно пройшов модерацію та був ухвалений.</p>
+<p>Жодних додаткових дій з вашого боку не потрібно.</p>
+<p>Для перегляду повного переліку Ваших досягнень у професійній діяльності перейдіть за посиланням: https://is.op.edu.ua/employee/details/@Model.employeeID</p>
+<p>З повагою, адміністрація інформаційної системи «Одеської політехніки»</p>
+</body>
+</html>

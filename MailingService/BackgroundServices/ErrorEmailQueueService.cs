@@ -1,31 +1,33 @@
 using System.Globalization;
 using System.Text;
-using MailingService.Models;
+using MailingService.Entities;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
 namespace MailingService.BackgroundServices;
 
-public class ErrorQueueReprocessorService : BackgroundService
+public class ErrorEmailQueueService : BackgroundService
 {
+    private readonly ILogger<ErrorEmailQueueService> _logger;
     private readonly RabbitMqSettings _settings;
-    private readonly ILogger<ErrorQueueReprocessorService> _logger;
     
-    private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(15);
-
-    public ErrorQueueReprocessorService(IOptions<RabbitMqSettings> settings, ILogger<ErrorQueueReprocessorService> logger)
+    private readonly TimeSpan _pollingInterval;
+    
+    public ErrorEmailQueueService(IOptions<RabbitMqSettings> rabbitSettings, ILogger<ErrorEmailQueueService> logger,
+        IOptions<ErrorEmailQueueServiceSettings> errorQueueSettings)
     {
-        _settings = settings.Value;
+        _settings = rabbitSettings.Value;
         _logger = logger;
+        _pollingInterval = TimeSpan.FromSeconds(errorQueueSettings.Value.PollingIntervalSeconds);
     }
-
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation($"[Reprocessor] Фоновый сервис запущен. Проверка очереди");
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(PollingInterval, stoppingToken);
+            await Task.Delay(_pollingInterval, stoppingToken);
 
             try
             {
@@ -37,7 +39,7 @@ public class ErrorQueueReprocessorService : BackgroundService
             }
         }
     }
-
+    
     private async Task ReprocessErrorQueueAsync(CancellationToken cancellationToken)
     {
         var factory = new ConnectionFactory

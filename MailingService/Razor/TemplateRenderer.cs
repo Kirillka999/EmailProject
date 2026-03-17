@@ -1,19 +1,20 @@
-using Microsoft.CodeAnalysis;
 using RazorLight;
 using Shared.Events;
 
-namespace MailingService.Services;
+namespace MailingService.Razor;
 
 public class TemplateRenderer
 {
     private readonly IRazorLightEngine _engine;
-
+    
     public TemplateRenderer()
     {
-        var sharedAssembly = typeof(NotificationEvent).Assembly;
+        var sharedAssembly = typeof(EmailNotificationEvent).Assembly;
         
+        string rootNamespace = $"{sharedAssembly.GetName().Name}.Templates"; 
+    
         _engine = new RazorLightEngineBuilder()
-            .UseEmbeddedResourcesProject(sharedAssembly, nameof(Shared) + ".Templates")
+            .UseEmbeddedResourcesProject(sharedAssembly, rootNamespace)
             .UseMemoryCachingProvider()
             .Build();
     }
