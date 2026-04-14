@@ -1,9 +1,9 @@
-using MailingService.BackgroundServices;
 using MailingService.Consumers;
 using MailingService.Database;
 using MailingService.Entities;
 using MailingService.Exceptions;
 using MailingService.Interfaces;
+using MailingService.RateLimiting;
 using MailingService.Razor;
 using MailingService.Services;
 using MassTransit;
@@ -20,8 +20,8 @@ public class Program
         // IOptions<T>
         builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
         builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMqSettings"));
-        builder.Services.Configure<ErrorEmailQueueServiceSettings>(builder.Configuration.GetSection("ErrorEmailQueueServiceSettings"));
-
+        builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("RateLimitSettings"));
+        
         // Database
         builder.Services.AddDbContext<MailingDbContext>(opt => 
             opt.UseNpgsql(builder.Configuration.GetConnectionString("MailingDb")));
@@ -31,15 +31,35 @@ public class Program
         builder.Services.AddSingleton<SmtpConnectionManager>();
         builder.Services.AddScoped<IEmailService, EmailService>();
         
-        // Background services
-        builder.Services.AddHostedService<ErrorEmailQueueService>();
+        builder.Services.AddSingleton<IRateLimitStateManager, FileRateLimitStateManager>();
+        builder.Services.AddSingleton<EmailQueueManager>();
+
+        // Email Consumer configuration
+        builder.Services.AddSingleton<Action<IBusRegistrationContext, IReceiveEndpointConfigurator>>(_ => 
+            (context, cfg) =>
+        {
+            cfg.PrefetchCount = 1;
+            cfg.ConcurrentMessageLimit = 1;
+        
+            cfg.UseConsumeFilter(typeof(GoogleRateLimitFilter<>), context);
+        
+            cfg.UseMessageRetry(r =>
+            {
+                r.Interval(3, TimeSpan.FromSeconds(10));
+                r.Ignore<RateLimitException>(); 
+            });
+        
+            cfg.ConfigureConsumer<EmailConsumer>(context);
+        });
         
         // MassTransit + Rabbit
         builder.Services.AddMassTransit(x =>
         {
+            x.AddDelayedMessageScheduler();
+
             x.AddConsumer<EmailConsumer>();
 
-            x.UsingRabbitMq((context, cfg) =>
+            x.UsingRabbitMq((_, cfg) =>
             {
                 var rabbitSettings = builder.Configuration.GetSection("RabbitMqSettings").Get<RabbitMqSettings>()!;
 
@@ -48,28 +68,12 @@ public class Program
                     h.Username(rabbitSettings.Username);
                     h.Password(rabbitSettings.Password);
                 });
-
-                cfg.PrefetchCount = 1;
-
-                cfg.ReceiveEndpoint(rabbitSettings.QueueName, e =>
-                {
-                    e.UseKillSwitch(options => options
-                        .SetActivationThreshold(3)
-                        .SetTripThreshold(0.15)
-                        .SetExceptionFilter(filter => { filter.Handle<RateLimitException>(); })
-                        .SetRestartTimeout(TimeSpan.FromMinutes(rabbitSettings.KillSwitchTimeoutMinutes)));
-
-                    e.UseMessageRetry(r =>
-                    {
-                        r.Interval(3, TimeSpan.FromSeconds(10));
-
-                        r.Ignore<RateLimitException>();
-                    });
-
-                    e.ConfigureConsumer<EmailConsumer>(context);
-                });
+                
+                cfg.UseDelayedMessageScheduler();
             });
         });
+        
+        builder.Services.AddHostedService<EmailEndpointHostedService>(); 
         
         var app = builder.Build();
         

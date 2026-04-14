@@ -1,4 +1,4 @@
-namespace Shared.Templates;
+namespace Shared.Templates.LicenseTerms.Decline;
 
 public class LicenseTermsDecline
 {

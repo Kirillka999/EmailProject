@@ -1,10 +1,14 @@
-@using Shared.Templates
-@model LicenseTermsApprove
+@model Shared.Templates.LicenseTerms.Approve.LicenseTermsApprove
+
+@{
+    ViewBag.Subject = $"Модерація ліцензійних умов — Ухвалено пункт — {Model.LicenseTermTitle}";
+}
 
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <title>Модерація ліцензійних умов — Ухвалено пункт — @Model.LicenseTermTitle</title>
+    <meta charset="UTF-8">
+    <title>@ViewBag.Subject</title>
 </head>
 <body>
 <p>Шановний @Model.UserFirstName @Model.UserLastName!</p>

@@ -43,7 +43,7 @@ public class EmailService : IEmailService
             {
                 Id = messageId,
                 Recipient = eventData.Email,
-                Subject = eventData.Subject,
+                Subject = "",
                 CreatedAt = DateTime.UtcNow,
                 Status = EmailStatusEnum.Processing
             };
@@ -59,15 +59,21 @@ public class EmailService : IEmailService
         try
         {
             Type modelType = Type.GetType(eventData.ModelTypeName)!;
-                
             object templateModel = JsonSerializer.Deserialize(eventData.Payload, modelType)!;
-            string htmlBody = await _renderer.RenderAsync(eventData.TemplateName, templateModel);
             
+            var (htmlBody, templateSubject) = await _renderer.RenderAsync(modelType, templateModel);
+            
+            if (string.IsNullOrWhiteSpace(templateSubject))
+            {
+                throw new InvalidOperationException($"Тема письма не задана! Убедитесь, что в файле .cshtml для {modelType.Name} указано: ViewBag.Subject = \"...\";");
+            }
+            
+            emailLog.Subject = templateSubject;
             emailLog.Body = htmlBody;
             
-            var message = CreateMimeMessage(eventData, htmlBody);
+            var message = CreateMimeMessage(eventData, htmlBody, templateSubject);
         
-            _logger.LogInformation("Отправка письма на {Email}...", eventData.Email);
+            _logger.LogInformation("Отправка письма на {Email} с темой '{Subject}'...", eventData.Email, templateSubject);
             
             await _connectionManager.ExecuteAsync(async client =>
             {
@@ -102,12 +108,14 @@ public class EmailService : IEmailService
         }
     }
     
-    private MimeMessage CreateMimeMessage(EmailNotificationEvent eventData, string htmlBody)
+    private MimeMessage CreateMimeMessage(EmailNotificationEvent eventData, string htmlBody, string subject)
     {
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_smtpSettings.SenderName, _smtpSettings.SenderEmail));
         message.To.Add(new MailboxAddress("", eventData.Email));
-        message.Subject = eventData.Subject;
+        
+        message.Subject = subject; // Используем тему из шаблона
+        
         message.Body = new TextPart(TextFormat.Html)
         {
             Text = htmlBody

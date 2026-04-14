@@ -1,4 +1,4 @@
-namespace Shared.Templates;
+namespace Shared.Templates.LicenseTerms.Approve;
 
 public class LicenseTermsApprove
 {

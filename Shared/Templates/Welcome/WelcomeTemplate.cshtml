@@ -1,10 +1,14 @@
-@using Shared.Templates
-@model WelcomeTemplate
+@model Shared.Templates.Welcome.WelcomeTemplate
+
+@{
+    ViewBag.Subject = "Вітальний лист";
+}
 
 <!DOCTYPE html>
 <html lang="">
 <head>
-    <title>Вітаємо!</title>
+    <meta charset="UTF-8">
+    <title>@ViewBag.Subject</title>
 </head>
 <body>
 <h1>Вітаю, @Model.UserName!</h1>
