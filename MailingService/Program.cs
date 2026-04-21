@@ -73,7 +73,7 @@ public class Program
             });
         });
         
-        builder.Services.AddHostedService<EmailEndpointHostedService>(); 
+        builder.Services.AddHostedService<StartupEmailQueueHostedService>(); 
         
         var app = builder.Build();
         

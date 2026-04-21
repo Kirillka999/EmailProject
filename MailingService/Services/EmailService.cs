@@ -37,7 +37,17 @@ public class EmailService : IEmailService
     {
         var emailLog = await _dbContext.EmailLogs.FindAsync(messageId);
         
-        if (emailLog is null)
+        if (emailLog is not null)
+        {
+            if (emailLog.Status == EmailStatusEnum.Sent)
+            {
+                _logger.LogInformation("Письмо {MessageId} уже было успешно отправлено ранее. Пропускаем дубликат.", messageId);
+                return;
+            }
+            
+            emailLog.Status = EmailStatusEnum.Processing;
+        }
+        else
         {
             emailLog = new EmailLog
             {
@@ -48,10 +58,6 @@ public class EmailService : IEmailService
                 Status = EmailStatusEnum.Processing
             };
             _dbContext.EmailLogs.Add(emailLog);
-        }
-        else
-        {
-            emailLog.Status = EmailStatusEnum.Processing;
         }
         
         await _dbContext.SaveChangesAsync();
@@ -114,7 +120,7 @@ public class EmailService : IEmailService
         message.From.Add(new MailboxAddress(_smtpSettings.SenderName, _smtpSettings.SenderEmail));
         message.To.Add(new MailboxAddress("", eventData.Email));
         
-        message.Subject = subject; // Используем тему из шаблона
+        message.Subject = subject;
         
         message.Body = new TextPart(TextFormat.Html)
         {

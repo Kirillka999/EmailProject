@@ -1,12 +1,12 @@
 namespace MailingService.RateLimiting;
 
-public class EmailEndpointHostedService : IHostedService 
+public class StartupEmailQueueHostedService : IHostedService 
 {
     private readonly EmailQueueManager _queueManager;
     private readonly IRateLimitStateManager _stateManager;
-    private readonly ILogger<EmailEndpointHostedService> _logger;
+    private readonly ILogger<StartupEmailQueueHostedService> _logger;
 
-    public EmailEndpointHostedService(EmailQueueManager queueManager, IRateLimitStateManager stateManager, ILogger<EmailEndpointHostedService> logger)
+    public StartupEmailQueueHostedService(EmailQueueManager queueManager, IRateLimitStateManager stateManager, ILogger<StartupEmailQueueHostedService> logger)
     {
         _queueManager = queueManager;
         _stateManager = stateManager;
